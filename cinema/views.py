@@ -74,7 +74,8 @@ class MovieListView(ListView):
               .select_related('country', 'main_genre')
               .prefetch_related('genres', 'actors'))
         self.filterset = MovieFilter(self.request.GET, queryset=qs)
-        return self.filterset.qs
+        return self.filterset.qs.order_by('-release_date', 'title')
+
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
