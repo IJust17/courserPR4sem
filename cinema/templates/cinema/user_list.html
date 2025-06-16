@@ -1,0 +1,39 @@
+{% extends 'cinema/base.html' %}
+{% block title %}Пользователи{% endblock %}
+
+{% block content %}
+<h2>Список пользователей</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Имя</th>
+      <th>E-mail</th>
+      <th>Роль</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for u in users %}
+    <tr>
+      <td>{{ u.username }}</td>
+      <td>{{ u.email|default:"—" }}</td>
+      <td>{{ u.is_staff|yesno:"Админ,Пользователь" }}</td>
+      <td>
+        {% if request.user != u %}
+          <form method="post"
+                action="{% url 'cinema:user-toggle-staff' u.id %}">
+            {% csrf_token %}
+            <button>
+              {{ u.is_staff|yesno:"Снять права,Сделать админом" }}
+            </button>
+          </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4">Пользователей нет.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

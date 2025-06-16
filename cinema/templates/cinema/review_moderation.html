@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Модерация отзывов{% endblock %}
+{% block content %}
+<h2>Ожидают одобрения</h2>
+<ul>
+  {% for r in reviews %}
+    <li>
+      <strong>{{ r.movie.title }}</strong> — {{ r.user.username }}: {{ r.review_text|truncatechars:80 }}
+      <form action="{% url 'cinema:review-approve' r.id %}" method="post" style="display:inline">
+        {% csrf_token %}<button>Одобрить</button>
+      </form>
+    </li>
+  {% empty %}
+    <p>Новых отзывов нет.</p>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'cinema/base.html' %}
+{% block title %}Удалить фильм{% endblock %}
+{% block content %}
+<h2>Удалить фильм «{{ object }}»?</h2>
+
+<form method="post">{% csrf_token %}
+  <button type="submit" class="contrast">Подтвердить удаление</button>
+  <a href="{{ object.get_absolute_url }}">Отмена</a>
+</form>
+{% endblock %}

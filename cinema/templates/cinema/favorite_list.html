@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Избранное{% endblock %}
+{% block content %}
+<h2>Избранные фильмы</h2>
+{% if favorites %}
+  <ul>
+    {% for fav in favorites %}
+      <li>
+        <a href="{% url 'cinema:movie-detail' fav.movie.pk %}">
+          {{ fav.movie.title }}
+        </a> ({{ fav.movie.main_genre }})
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>Вы ещё ничего не добавили в избранное.</p>
+{% endif %}
+{% endblock %}

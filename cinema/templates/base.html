@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Mafisha{% endblock %}</title>
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body>
+<header class="container">
+  <nav>
+    <ul>
+      <li><strong><a href="{% url 'cinema:movie-list' %}">Mafisha</a></strong></li>
+    </ul>
+    <ul>
+      {% if user.is_authenticated %}
+        <li><a href="{% url 'cinema:favorite-list' %}">❤ Избранное</a></li>
+        <li><a href="{% url 'cinema:ticket-list' %}">🎟 Билеты</a></li>
+        <li><a href="{% url 'cinema:recommendations' %}">⭐ Рекомендации</a></li>
+
+        {% if user.is_staff %}
+          <li><a href="{% url 'cinema:movie-create' %}">➕ Фильм</a></li>
+          <li><a href="{% url 'cinema:review-moderation' %}">📝 Модерация</a></li>
+          <li><a href="{% url 'cinema:user-list' %}">👥 Пользователи</a></li>
+        {% endif %}
+
+        <li><a href="{% url 'cinema:profile' %}">{{ user.username }}</a></li>
+        <li><a href="{% url 'cinema:logout' %}">Выход</a></li>
+      {% else %}
+        <li><a href="{% url 'cinema:login' %}">Вход</a></li>
+        <li><a href="{% url 'cinema:register' %}">Регистрация</a></li>
+      {% endif %}
+    </ul>
+  </nav>
+</header>
+
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

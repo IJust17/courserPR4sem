@@ -1,0 +1,30 @@
+{% extends 'cinema/base.html' %}
+{% block title %}Мои билеты{% endblock %}
+{% block content %}
+<h2>Купленные билеты</h2>
+
+{% if tickets %}
+  <table>
+    <thead>
+      <tr>
+        <th>Фильм</th><th>Сеанс</th><th>Место</th><th>Цена</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for t in tickets %}
+      <tr>
+        <td>{{ t.session.movie.title }}</td>
+        <td>
+          {{ t.session.starts_at|date:"d.m.Y H:i" }}<br>
+          ({{ t.session.hall.cinema.name }}, {{ t.session.hall.name }})
+        </td>
+        <td>Ряд {{ t.seat.row_num }}, место {{ t.seat.seat_num }}</td>
+        <td>{{ t.session.price }} ₽</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p>У вас ещё нет билетов.</p>
+{% endif %}
+{% endblock %}

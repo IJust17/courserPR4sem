@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Профиль{% endblock %}
+{% block content %}
+<h2>Профиль</h2>
+<form method="post">{% csrf_token %}
+  {{ form.as_p }}
+  <button>Сохранить</button>
+</form>
+
+<hr>
+<p><strong>Дата регистрации:</strong> {{ user.date_joined|date:"d.m.Y H:i" }}</p>
+{% endblock %}

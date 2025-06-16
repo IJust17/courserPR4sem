@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}{% if object %}Редактировать{% else %}Добавить{% endif %} фильм{% endblock %}
+{% block content %}
+<h2>{% if object %}Редактировать{% else %}Добавить{% endif %} фильм</h2>
+<form method="post" enctype="multipart/form-data">{% csrf_token %}
+  {{ form.non_field_errors }}
+  {{ form.title.label_tag }} {{ form.title }}<br>
+  {{ form.description.label_tag }} {{ form.description }}<br>
+  {{ form.release_year.label_tag }} {{ form.release_year }}<br>
+  {{ form.poster.label_tag }} {{ form.poster }}<br>
+  {{ form.country.label_tag }} {{ form.country }}<br>
+  {{ form.main_genre.label_tag }} {{ form.main_genre }}<br>
+  {{ form.genres.label_tag }} {{ form.genres }}<br>
+  {{ form.actors.label_tag }} {{ form.actors }}<br>
+  <button type="submit">Сохранить</button>
+</form>
+{% endblock %}
