@@ -250,7 +250,6 @@ class MovieDeleteView(StaffRequiredMixin, DeleteView):
     success_url = reverse_lazy('cinema:movie-list')
 
 class BCExamListView(ListView):
-    """Страница со списком всех опубликованных экзаменов Bulat Chakhiev."""
     model = BCExam
     template_name = 'cinema/bcexam_list.html'
     context_object_name = 'exams'

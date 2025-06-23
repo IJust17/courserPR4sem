@@ -323,7 +323,7 @@ class Ticket(models.Model):
         return f'Билет {self.id} — {self.session} ({self.seat})'
 
 class BCExam(models.Model):
-    """Модель экзамена для контрольной работы (Bulat Chakhiev)."""
+
     title = models.CharField('название экзамена', max_length=255)
     created_at = models.DateTimeField('дата создания записи', auto_now_add=True)
     exam_date = models.DateField('дата проведения экзамена')
