@@ -13,6 +13,8 @@
       <li><strong><a href="{% url 'cinema:movie-list' %}">Mafisha</a></strong></li>
     </ul>
     <ul>
+      <li><a href="{% url 'cinema:bcexam-list' %}">Экзамены</a></li>  <!-- новая ссылка -->
+
       {% if user.is_authenticated %}
         <li><a href="{% url 'cinema:favorite-list' %}">Избранное</a></li>
         <li><a href="{% url 'cinema:ticket-list' %}">Билеты</a></li>

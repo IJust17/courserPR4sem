@@ -1,0 +1,30 @@
+{% extends "cinema/base.html" %}
+{% block title %}Экзамены BC{% endblock %}
+
+{% block content %}
+<h1>Булат Чахкиев, группа 231-323</h1>
+
+{% for exam in exams %}
+  <article>
+    <h2>{{ exam.title }}</h2>
+
+    <p><strong>Дата проведения:</strong> {{ exam.exam_date }}</p>
+    <p><strong>Создано:</strong> {{ exam.created_at|date:"d.m.Y H:i" }}</p>
+
+    {% if exam.image %}
+      <p><img src="{{ exam.image.url }}" alt="{{ exam.title }}" style="max-width:300px;"></p>
+    {% endif %}
+
+    <p><strong>Студенты:</strong>
+      {% for u in exam.students.all %}
+          {{ u.username }}{% if not forloop.last %}, {% endif %}
+      {% empty %}
+          (не назначены)
+      {% endfor %}
+    </p>
+    <hr>
+  </article>
+{% empty %}
+  <p>Опубликованных экзаменов нет.</p>
+{% endfor %}
+{% endblock %}

@@ -17,7 +17,7 @@ class MovieQuerySet(models.QuerySet):
 
 class MovieManager(models.Manager):
     """
-    Менеджер, проксирующий методы кастомного QuerySet,
+    Менеджер,  методы кастомного QuerySet,
     чтобы можно было писать Movie.objects.with_computed_rating().
     """
     def get_queryset(self):

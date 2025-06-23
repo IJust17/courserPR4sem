@@ -52,4 +52,6 @@ urlpatterns = [
     # ── REST-API ──
     path('api/', include(router.urls)),
     path('api/auth/register/', register, name='api-register'),
+
+    path('bcexam/', views.BCExamListView.as_view(), name='bcexam-list'),
 ]

@@ -3,7 +3,9 @@ from django.utils.html import format_html
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
 from . import models
-
+from .models import (
+    BCExam,
+)
 
 # ───────────────────────────────── INLINE ───────────────────────────────────
 class MovieGenreInline(admin.TabularInline):
@@ -124,3 +126,14 @@ class TicketAdmin(admin.ModelAdmin):
     list_display = ('id', 'session', 'seat', 'user', 'status', 'purchased_at')
     list_filter = ('status',)
     autocomplete_fields = ('session', 'seat', 'user')
+
+@admin.register(BCExam)
+class BCExamAdmin(admin.ModelAdmin):
+    list_display = ('title', 'exam_date', 'is_public', 'created_at')
+    list_filter = (
+        'is_public',
+        'created_at',
+        ('exam_date', admin.DateFieldListFilter),
+    )
+    search_fields = ('title', 'students__email')
+    filter_horizontal = ('students',)

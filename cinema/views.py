@@ -9,7 +9,7 @@ from django.views.generic import (
     TemplateView, FormView
 )
 
-from .models import Movie, Favorite, Review, Ticket, Seat, User
+from .models import Movie, Favorite, Review, Ticket, Seat, User, BCExam
 from .forms import (
     MovieForm, SignUpForm, SignInForm,
     ReviewForm, ProfileUpdateForm, TicketPurchaseForm
@@ -248,3 +248,15 @@ class MovieDeleteView(StaffRequiredMixin, DeleteView):
     model = Movie
     template_name = 'cinema/movie_confirm_delete.html'
     success_url = reverse_lazy('cinema:movie-list')
+
+class BCExamListView(ListView):
+    """Страница со списком всех опубликованных экзаменов Bulat Chakhiev."""
+    model = BCExam
+    template_name = 'cinema/bcexam_list.html'
+    context_object_name = 'exams'
+
+    def get_queryset(self):
+        return (BCExam.objects
+                .filter(is_public=True)
+                .prefetch_related('students')
+                .order_by('-exam_date'))
