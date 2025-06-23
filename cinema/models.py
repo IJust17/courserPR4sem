@@ -2,13 +2,29 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
+from django.db.models import Avg, Count, Max            # ← добавлено Count, Max
 from django.urls import reverse
 from django.utils import timezone
 
-from .managers import MovieManager
+
+# ───────────────────── кастомный QuerySet ─────────────────────
+class MovieQuerySet(models.QuerySet):
+    # 1) средняя оценка
+    def with_computed_rating(self):
+        return self.annotate(computed_rating=Avg('reviews__rating'))
+
+    # 2) средняя, количество и максимальная оценка – пример комплексной статистики
+    def with_review_stats(self):
+        return (self
+                .annotate(
+                    computed_rating=Avg('reviews__rating'),
+                    review_count=Count('reviews'),
+                    max_rating=Max('reviews__rating'),
+                )
+        )
 
 
-# ─────────── пользователь ───────────
+# ───────────────────── пользователь ─────────────────────
 class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -21,7 +37,7 @@ class User(AbstractUser):
         return self.username
 
 
-# ─────────── справочники ───────────
+# ───────────────────── справочники ─────────────────────
 class Country(models.Model):
     name = models.CharField('страна', max_length=100, unique=True)
 
@@ -59,7 +75,7 @@ class Actor(models.Model):
         return self.name
 
 
-# ─────────── фильм ───────────
+# ───────────────────── фильм ─────────────────────
 class Movie(models.Model):
     title = models.CharField('название', max_length=255)
     description = models.TextField('описание')
@@ -85,7 +101,8 @@ class Movie(models.Model):
         default=0, editable=False
     )
 
-    objects = MovieManager()
+    # подключаем расширенный менеджер
+    objects = MovieQuerySet.as_manager()
 
     class Meta:
         verbose_name = 'фильм'
@@ -139,7 +156,7 @@ class MovieActor(models.Model):
         return f'{self.actor} в «{self.movie}» — {self.role_name}'
 
 
-# ─────────── отзыв и избранное ───────────
+# ───────────────────── отзыв и избранное ─────────────────────
 class Review(models.Model):
     RATING_CHOICES = [(i, str(i)) for i in range(1, 11)]
 
@@ -152,8 +169,8 @@ class Review(models.Model):
     )
     rating = models.PositiveSmallIntegerField('оценка', choices=RATING_CHOICES)
     review_text = models.TextField('текст отзыва', blank=True)
+    is_approved = models.BooleanField('одобрен', default=False)
     created_at = models.DateTimeField('создан', default=timezone.now, editable=False)
-    is_approved = models.BooleanField('одобрен модератором', default=False)  # ← новое
 
     class Meta:
         verbose_name = 'отзыв'
@@ -166,8 +183,6 @@ class Review(models.Model):
     def clean(self):
         if not (1 <= self.rating <= 10):
             raise ValidationError('Оценка должна быть от 1 до 10.')
-
-        # пример собственной валидации (запрещённые слова)
         bad = {w for w in settings.BANNED_WORDS if w in self.review_text.lower()}
         if bad:
             raise ValidationError('Отзыв содержит запрещённые слова: ' + ', '.join(bad))
@@ -190,7 +205,7 @@ class Favorite(models.Model):
         ordering = ['-added_at']
 
 
-# ─────────── кинотеатры, залы, места ───────────
+# ───────────────────── кинотеатры, залы, места, сеансы, билеты ─────────────────────
 class Cinema(models.Model):
     name = models.CharField('кинотеатр', max_length=200)
     address = models.TextField('адрес')
@@ -227,12 +242,12 @@ class Hall(models.Model):
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
-
         if is_new:
-            seats = []
-            for r in range(1, self.rows + 1):
-                for s in range(1, self.seats_per_row + 1):
-                    seats.append(Seat(hall=self, row_num=r, seat_num=s))
+            seats = [
+                Seat(hall=self, row_num=r, seat_num=s)
+                for r in range(1, self.rows + 1)
+                for s in range(1, self.seats_per_row + 1)
+            ]
             Seat.objects.bulk_create(seats)
 
 
@@ -277,9 +292,9 @@ class Session(models.Model):
 
 class Ticket(models.Model):
     class Status(models.TextChoices):
-        RESERVED = 'reserved', 'зарезервирован'
-        PAID = 'paid', 'оплачен'
-        CANCELLED = 'cancelled', 'отменён'
+        RESERVED = 'reserved', 'Зарезервирован'
+        PAID = 'paid', 'Оплачен'
+        CANCELLED = 'cancelled', 'Отменён'
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, verbose_name='покупатель',
@@ -306,3 +321,27 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f'Билет {self.id} — {self.session} ({self.seat})'
+
+class BCExam(models.Model):
+    """Модель экзамена для контрольной работы (Bulat Chakhiev)."""
+    title = models.CharField('название экзамена', max_length=255)
+    created_at = models.DateTimeField('дата создания записи', auto_now_add=True)
+    exam_date = models.DateField('дата проведения экзамена')
+    image = models.ImageField(
+        'задание (картинка)', upload_to='exams/', blank=True, null=True
+    )
+    students = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        verbose_name='студенты',
+        related_name='bc_exams',
+        blank=True
+    )
+    is_public = models.BooleanField('опубликовано', default=False)
+
+    class Meta:
+        verbose_name = 'экзамен BC'
+        verbose_name_plural = 'экзамены BC'
+        ordering = ['-exam_date', 'title']
+
+    def __str__(self):
+        return self.title
