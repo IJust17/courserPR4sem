@@ -16,14 +16,16 @@ class UserSerializer(serializers.ModelSerializer):
 
 # ─────────── Review ───────────
 class ReviewSerializer(serializers.ModelSerializer):
-    author_name = serializers.CharField(source='user.username', read_only=True)
+    author_name = serializers.CharField(source='user.username',
+                                        read_only=True)
     is_approved = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Review
         fields = ('id', 'movie', 'user', 'author_name',
                   'rating', 'review_text', 'created_at', 'is_approved')
-        read_only_fields = ('id', 'created_at', 'author_name', 'is_approved')
+        read_only_fields = ('id', 'created_at',
+                            'author_name', 'is_approved')
 
 
 # ─────────── Movie ───────────
@@ -42,14 +44,16 @@ class MovieSerializer(serializers.ModelSerializer):
         source='country.name', read_only=True
     )
 
+    trailer = serializers.FileField(required=False)          # <── FileField
     average_rating = serializers.SerializerMethodField()
     is_favorite = serializers.SerializerMethodField()
+    trailer_url = serializers.URLField(required=False)  # URLField → API
 
     class Meta:
         model = Movie
         fields = (
             'id', 'title', 'description', 'release_date',
-            'poster',
+            'poster', 'trailer', 'trailer_url',
             'country', 'country_name',
             'main_genre', 'main_genre_name',
             'genres', 'actors',
@@ -59,7 +63,8 @@ class MovieSerializer(serializers.ModelSerializer):
     # ───── вычисляемые поля ─────
     def get_average_rating(self, obj):
         return getattr(obj, 'computed_rating', None) \
-            or obj.reviews.filter(is_approved=True).aggregate(avg=Avg('rating'))['avg']
+            or obj.reviews.filter(is_approved=True) \
+                          .aggregate(avg=Avg('rating'))['avg']
 
     def get_is_favorite(self, obj):
         favs = self.context.get('favorite_ids')

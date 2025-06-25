@@ -3,7 +3,8 @@ from datetime import date
 
 from django import forms
 from django.contrib.auth import get_user_model
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import (UserCreationForm,
+                                       AuthenticationForm)
 from django.utils import timezone
 
 from .models import Movie, Review, Session, Ticket
@@ -36,7 +37,10 @@ class MovieForm(forms.ModelForm):
         label='Год выхода',
         min_value=1888,
         max_value=datetime.date.today().year + 5,
-        widget=forms.NumberInput(attrs={'placeholder': 'например 2024'}),
+        widget=forms.NumberInput(attrs={'placeholder': 'например 2026'}),
+    )
+    trailer = forms.FileField(                 # <── FileField на форме
+        label='Файл трейлера', required=False
     )
 
     class Meta:
@@ -50,7 +54,8 @@ class MovieForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
-            self.fields['release_year'].initial = self.instance.release_date.year
+            self.fields['release_year'].initial = \
+                self.instance.release_date.year
 
     def clean(self):
         cleaned = super().clean()
@@ -77,7 +82,8 @@ class ReviewForm(forms.ModelForm):
 
 # ────── покупка билета ──────
 class TicketPurchaseForm(forms.Form):
-    session = forms.ModelChoiceField(queryset=Session.objects.none(), label='Сеанс')
+    session = forms.ModelChoiceField(queryset=Session.objects.none(),
+                                     label='Сеанс')
     payment_method = forms.ChoiceField(
         label='Способ оплаты',
         choices=[('sbp', 'СБП'), ('cash', 'Наличные')],
@@ -100,10 +106,11 @@ class TicketPurchaseForm(forms.Form):
             return cleaned
 
         seats_qs = session.hall.seats.all()
-        # Если мест не заведено вовсе – считаем зал свободным
         if seats_qs.exists():
             taken = session.tickets.values_list('seat_id', flat=True)
             has_free = seats_qs.exclude(id__in=taken).exists()
             if not has_free:
-                raise forms.ValidationError('На выбранный сеанс нет свободных мест.')
+                raise forms.ValidationError(
+                    'На выбранный сеанс нет свободных мест.'
+                )
         return cleaned

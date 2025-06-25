@@ -1,13 +1,18 @@
 from django.contrib.auth import login, logout, views as auth_views
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView,
-    TemplateView, FormView
+    FormView
 )
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.contrib.staticfiles import finders  # ← NEW
+import weasyprint
 
 from .models import Movie, Favorite, Review, Ticket, Seat, User
 from .forms import (
@@ -76,7 +81,6 @@ class MovieListView(ListView):
         self.filterset = MovieFilter(self.request.GET, queryset=qs)
         return self.filterset.qs.order_by('-release_date', 'title')
 
-
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['filterset'] = self.filterset
@@ -101,7 +105,7 @@ class MovieDetailView(DetailView):
         if form.is_valid():
             form.instance.user = request.user
             form.instance.movie = self.object
-            form.instance.is_approved = request.user.is_staff  # админ = auto approve
+            form.instance.is_approved = request.user.is_staff
             form.save()
             return redirect(self.object.get_absolute_url())
         return self.render_to_response(self.get_context_data(form=form))
@@ -133,7 +137,6 @@ class TicketPurchaseView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         session = form.cleaned_data['session']
-
         if session.hall.seats.exists():
             taken = session.tickets.values_list('seat_id', flat=True)
             seat = session.hall.seats.exclude(id__in=taken).first()
@@ -141,7 +144,6 @@ class TicketPurchaseView(LoginRequiredMixin, FormView):
             seat, _ = Seat.objects.get_or_create(
                 hall=session.hall, row_num=1, seat_num=1
             )
-
         Ticket.objects.create(
             user=self.request.user,
             session=session,
@@ -169,9 +171,8 @@ class FavoriteToggleView(LoginRequiredMixin, View):
     def post(self, request, pk):
         movie = get_object_or_404(Movie, pk=pk)
         fav_qs = Favorite.objects.filter(user=request.user, movie=movie)
-        fav_qs.delete() if fav_qs.exists() else Favorite.objects.create(
-            user=request.user, movie=movie
-        )
+        fav_qs.delete() if fav_qs.exists() else \
+            Favorite.objects.create(user=request.user, movie=movie)
         return redirect(movie.get_absolute_url())
 
 
@@ -194,9 +195,9 @@ class StaffRequiredMixin(UserPassesTestMixin):
 class ReviewModerationListView(StaffRequiredMixin, ListView):
     template_name = 'cinema/review_moderation.html'
     context_object_name = 'reviews'
-    queryset = Review.objects.filter(is_approved=False) \
-                             .select_related('movie', 'user') \
-                             .order_by('-created_at')
+    queryset = (Review.objects.filter(is_approved=False)
+                              .select_related('movie', 'user')
+                              .order_by('-created_at'))
 
 
 class ReviewApproveView(StaffRequiredMixin, View):
@@ -206,8 +207,8 @@ class ReviewApproveView(StaffRequiredMixin, View):
         review.save()
         return redirect('cinema:review-moderation')
 
-class ReviewDeleteView(StaffRequiredMixin, View):              # ← добавлено
-    """Удаление отзыва прямо со страницы фильма (доступно только staff)."""
+
+class ReviewDeleteView(StaffRequiredMixin, View):
     def post(self, request, pk):
         review = get_object_or_404(Review, pk=pk)
         movie_url = review.movie.get_absolute_url()
@@ -225,13 +226,13 @@ class UserListView(StaffRequiredMixin, ListView):
 class ToggleStaffView(StaffRequiredMixin, View):
     def post(self, request, pk):
         user = get_object_or_404(User, pk=pk)
-        if user != request.user:               # нельзя лишить себя прав
+        if user != request.user:
             user.is_staff = not user.is_staff
             user.save()
         return redirect('cinema:user-list')
 
 
-# ─────────── CRUD фильмов (staff) ───────────
+# ─────────── CRUD фильмов ───────────
 class MovieCreateView(StaffRequiredMixin, CreateView):
     model = Movie
     form_class = MovieForm
@@ -248,3 +249,20 @@ class MovieDeleteView(StaffRequiredMixin, DeleteView):
     model = Movie
     template_name = 'cinema/movie_confirm_delete.html'
     success_url = reverse_lazy('cinema:movie-list')
+
+
+# ─────────── PDF-квитанция ───────────
+@staff_member_required
+def admin_ticket_pdf(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    html = render_to_string('cinema/ticket/pdf.html', {'ticket': ticket})
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'filename=ticket_{ticket.id}.pdf'
+
+    css_file = finders.find('css/pdf.css')     # ищем через staticfiles
+    stylesheets = [weasyprint.CSS(css_file)] if css_file else []
+
+    weasyprint.HTML(string=html).write_pdf(response,
+                                           stylesheets=stylesheets)
+    return response

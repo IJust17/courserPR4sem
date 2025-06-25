@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>Ticket {{ ticket.id }}</title>
+</head>
+<body>
+  <h1>Mafisha</h1>
+  <p>
+    Ticket no. {{ ticket.id }}<br>
+    <span class="secondary">
+      {{ ticket.purchased_at|date:"M d, Y" }}
+    </span>
+  </p>
+
+  <h3>Buyer</h3>
+  <p>
+    {{ ticket.user.username }}
+    {% if ticket.user.email %}({{ ticket.user.email }}){% endif %}
+  </p>
+
+  <h3>Details</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Movie</th><th>Hall</th><th>Seat</th>
+        <th>Starts at</th><th>Price</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>{{ ticket.session.movie.title }}</td>
+        <td>{{ ticket.session.hall }}</td>
+        <td>Row {{ ticket.seat.row_num }}, seat {{ ticket.seat.seat_num }}</td>
+        <td>{{ ticket.session.starts_at|date:"d.m H:i" }}</td>
+        <td class="num">{{ ticket.session.price }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <span class="{% if ticket.status == 'paid' %}paid{% else %}pending{% endif %}">
+    {% if ticket.status == 'paid' %}PAID{% else %}PENDING PAYMENT{% endif %}
+  </span>
+</body>
+</html>

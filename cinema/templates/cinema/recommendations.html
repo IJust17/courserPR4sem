@@ -1,15 +1,24 @@
-{% extends 'cinema/base.html' %}
+{% extends "cinema/base.html" %}
 {% block title %}Рекомендации{% endblock %}
+
 {% block content %}
-<h2>Фильмы, которые вам могут понравиться</h2>
-<ul>
-  {% for m in movies %}
-    <li>
-      <a href="{{ m.get_absolute_url }}">{{ m.title }}</a>
-      — ★ {{ m.avg_rating|default:"–" }}
-    </li>
+<h2>Рекомендуемые фильмы</h2>
+
+<table class="striped">
+  <thead>
+    <tr><th>Фильм</th><th>Рейтинг</th></tr>
+  </thead>
+  <tbody>
+  {% for movie in movies %}
+    <tr>
+      <td><a href="{{ movie.get_absolute_url }}">{{ movie.title }}</a></td>
+      <td class="num">
+        {{ movie.computed_rating|default:movie.avg_rating|floatformat:1 }}
+      </td>
+    </tr>
   {% empty %}
-    <p>Нет рекомендаций — сначала оцените несколько фильмов.</p>
+    <tr><td colspan="2">Пока рекомендаций нет.</td></tr>
   {% endfor %}
-</ul>
+  </tbody>
+</table>
 {% endblock %}

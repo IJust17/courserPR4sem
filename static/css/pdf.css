@@ -1,0 +1,8 @@
+body { font-family: sans-serif; }
+h1 { margin-bottom: .2em; }
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+th, td { padding: 4px 6px; border: 1px solid #3e6ba9; }
+th { background: #3e6ba9; color: #fff; }
+.num { text-align: right; }
+.paid    { color: #0a7c32; font-weight: 700; }
+.pending { color: #aa2d2d; font-weight: 700; }

@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
-from django.db import models, transaction
+from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
@@ -64,9 +64,18 @@ class Movie(models.Model):
     title = models.CharField('название', max_length=255)
     description = models.TextField('описание')
     release_date = models.DateField('дата выхода')
-    poster = models.ImageField('постер', upload_to='posters/', blank=True, null=True)
 
-    country = models.ForeignKey(Country, verbose_name='страна', on_delete=models.PROTECT)
+    poster = models.ImageField('постер', upload_to='posters/',
+                               blank=True, null=True)
+    trailer = models.FileField('файл трейлера', upload_to='trailers/',
+                               blank=True, null=True)
+    trailer_url = models.URLField(                    # ← URLField
+        'URL-трейлера (YouTube)', blank=True, null=True
+    )
+
+    country = models.ForeignKey(
+        Country, verbose_name='страна', on_delete=models.PROTECT
+    )
     main_genre = models.ForeignKey(
         Genre, verbose_name='основной жанр',
         related_name='main_movies', on_delete=models.PROTECT
@@ -81,8 +90,8 @@ class Movie(models.Model):
     )
 
     avg_rating = models.DecimalField(
-        'средняя оценка (денорм.)', max_digits=4, decimal_places=2,
-        default=0, editable=False
+        'средняя оценка (денорм.)', max_digits=4,
+        decimal_places=2, default=0, editable=False
     )
 
     objects = MovieManager()
@@ -101,7 +110,8 @@ class Movie(models.Model):
     def clean(self):
         if (Movie.objects
                 .exclude(pk=self.pk)
-                .filter(title__iexact=self.title, release_date=self.release_date)
+                .filter(title__iexact=self.title,
+                        release_date=self.release_date)
                 .exists()):
             raise ValidationError('Фильм с таким названием и годом уже есть.')
 
@@ -139,12 +149,17 @@ class MovieActor(models.Model):
         return f'{self.actor} в «{self.movie}» — {self.role_name}'
 
 
+# остальные модели не изменялись …
+
+
+
 # ─────────── отзыв и избранное ───────────
 class Review(models.Model):
     RATING_CHOICES = [(i, str(i)) for i in range(1, 11)]
 
     movie = models.ForeignKey(
-        Movie, verbose_name='фильм', on_delete=models.CASCADE, related_name='reviews'
+        Movie, verbose_name='фильм',
+        on_delete=models.CASCADE, related_name='reviews'
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, verbose_name='автор',
@@ -152,8 +167,11 @@ class Review(models.Model):
     )
     rating = models.PositiveSmallIntegerField('оценка', choices=RATING_CHOICES)
     review_text = models.TextField('текст отзыва', blank=True)
-    created_at = models.DateTimeField('создан', default=timezone.now, editable=False)
-    is_approved = models.BooleanField('одобрен модератором', default=False)  # ← новое
+    created_at = models.DateTimeField('создан', default=timezone.now,
+                                      editable=False)
+    is_approved = models.BooleanField(
+        'одобрен модератором', default=False
+    )
 
     class Meta:
         verbose_name = 'отзыв'
@@ -167,10 +185,12 @@ class Review(models.Model):
         if not (1 <= self.rating <= 10):
             raise ValidationError('Оценка должна быть от 1 до 10.')
 
-        # пример собственной валидации (запрещённые слова)
-        bad = {w for w in settings.BANNED_WORDS if w in self.review_text.lower()}
+        bad = {w for w in settings.BANNED_WORDS
+               if w in self.review_text.lower()}
         if bad:
-            raise ValidationError('Отзыв содержит запрещённые слова: ' + ', '.join(bad))
+            raise ValidationError(
+                'Отзыв содержит запрещённые слова: ' + ', '.join(bad)
+            )
 
 
 class Favorite(models.Model):
@@ -179,7 +199,8 @@ class Favorite(models.Model):
         on_delete=models.CASCADE, related_name='favorites'
     )
     movie = models.ForeignKey(
-        Movie, verbose_name='фильм', on_delete=models.CASCADE, related_name='favorites'
+        Movie, verbose_name='фильм',
+        on_delete=models.CASCADE, related_name='favorites'
     )
     added_at = models.DateTimeField('дата добавления', default=timezone.now)
 
@@ -190,7 +211,7 @@ class Favorite(models.Model):
         ordering = ['-added_at']
 
 
-# ─────────── кинотеатры, залы, места ───────────
+# ─────────── кинотеатры, залы, билеты ───────────
 class Cinema(models.Model):
     name = models.CharField('кинотеатр', max_length=200)
     address = models.TextField('адрес')
@@ -227,13 +248,12 @@ class Hall(models.Model):
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
-
         if is_new:
-            seats = []
-            for r in range(1, self.rows + 1):
-                for s in range(1, self.seats_per_row + 1):
-                    seats.append(Seat(hall=self, row_num=r, seat_num=s))
-            Seat.objects.bulk_create(seats)
+            Seat.objects.bulk_create(
+                Seat(hall=self, row_num=r, seat_num=s)
+                for r in range(1, self.rows + 1)
+                for s in range(1, self.seats_per_row + 1)
+            )
 
 
 class Seat(models.Model):
@@ -297,7 +317,8 @@ class Ticket(models.Model):
         'статус', max_length=10,
         choices=Status.choices, default=Status.PAID
     )
-    purchased_at = models.DateTimeField('время покупки', default=timezone.now)
+    purchased_at = models.DateTimeField('время покупки',
+                                        default=timezone.now)
 
     class Meta:
         verbose_name = 'билет'
