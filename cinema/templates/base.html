@@ -10,18 +10,20 @@
 <header class="container">
   <nav>
     <ul>
-      <li><strong><a href="{% url 'cinema:movie-list' %}">Mafisha</a></strong></li>
+      <li><strong><a href="{% url 'cinema:home' %}">Mafisha</a></strong></li>
     </ul>
     <ul>
+      <li><a href="{% url 'cinema:movie-list' %}">Каталог</a></li>
       {% if user.is_authenticated %}
         <li><a href="{% url 'cinema:favorite-list' %}">Избранное</a></li>
         <li><a href="{% url 'cinema:ticket-list' %}">Билеты</a></li>
         <li><a href="{% url 'cinema:recommendations' %}">Рекомендации</a></li>
 
         {% if user.is_staff %}
-          <li><a href="{% url 'cinema:movie-create' %}"> + Фильм</a></li>
+          <li><a href="{% url 'cinema:movie-create' %}">+ Фильм</a></li>
           <li><a href="{% url 'cinema:review-moderation' %}">Модерация</a></li>
           <li><a href="{% url 'cinema:user-list' %}">Пользователи</a></li>
+          <li><a href="/admin/">Админ-панель</a></li>
         {% endif %}
 
         <li><a href="{% url 'cinema:profile' %}">{{ user.username }}</a></li>

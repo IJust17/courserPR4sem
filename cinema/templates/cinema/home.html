@@ -1,0 +1,81 @@
+{% extends "cinema/base.html" %}
+{% block title %}Главная — Mafisha{% endblock %}
+
+{% block content %}
+<h2>Добро пожаловать в Mafisha!</h2>
+
+<!-- ===== Виджет 1: Новинки ===== -->
+<article>
+  <header><h3>Последние новинки</h3></header>
+
+  <ol style="list-style: none; padding-left: 0;">
+    {% for m in latest_movies %}
+      <li style="display: flex; gap: .75rem; align-items: center; margin-bottom: .5rem;">
+        {% if m.poster %}
+          <img src="{{ m.poster.url }}"
+               alt="Постер {{ m.title }}"
+               style="width: 250px; height: 250px; object-fit: fill; border-radius: .25rem;">
+        {% else %}
+          <div style="width: 60px; height: 90px; background:#e0e0e0;
+                      display:flex;align-items:center;justify-content:center;
+                      border-radius:.25rem; font-size:.7rem;">No&nbsp;img</div>
+        {% endif %}
+        <div>
+          <a href="{{ m.get_absolute_url }}">{{ m.title }}</a>
+          <small>({{ m.release_date|date:"Y" }})</small>
+        </div>
+      </li>
+    {% empty %}
+      <li>Пока нет новинок.</li>
+    {% endfor %}
+  </ol>
+
+  <footer>
+    <a href="{% url 'cinema:movie-list' %}?ordering=-release_date">Все новинки →</a>
+  </footer>
+</article>
+
+<!-- ===== Виджет 2: Топ по рейтингу ===== -->
+<article>
+  <header><h3>Лучшие фильмы (по рейтингу)</h3></header>
+  <ol>
+    {% for m in top_movies %}
+      <li>
+        <a href="{{ m.get_absolute_url }}">{{ m.title }}</a>
+        <small>— рейтинг {{ m.computed_rating|floatformat:1 }},
+               отзывов {{ m.review_count }}</small>
+      </li>
+    {% empty %}
+      <li>Отзывов ещё нет.</li>
+    {% endfor %}
+  </ol>
+  <footer>
+    <a href="{% url 'cinema:movie-list' %}?min_rating=8">Все топ-фильмы →</a>
+  </footer>
+</article>
+
+<!-- ===== Виджет 3: Ближайшие сеансы ===== -->
+<article>
+  <header><h3>Ближайшие сеансы</h3></header>
+  <ol>
+    {% for s in next_sessions %}
+      <li>
+        {{ s.starts_at|date:"d.m H:i" }} —
+        <a href="{{ s.movie.get_absolute_url }}">{{ s.movie.title }}</a>
+        <small>({{ s.hall.cinema.name }}, {{ s.hall.name }})</small>
+      </li>
+    {% empty %}
+      <li>Нет сеансов в ближайшее время.</li>
+    {% endfor %}
+  </ol>
+  <footer>
+    <a href="{% url 'cinema:movie-list' %}">Полное расписание →</a>
+  </footer>
+</article>
+
+<!-- ===== Поисковая строка ===== -->
+<form action="{% url 'cinema:movie-list' %}" method="get" class="grid">
+  <input name="title" type="text" placeholder="Найти фильм…" />
+  <button type="submit">Поиск</button>
+</form>
+{% endblock %}

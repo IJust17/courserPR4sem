@@ -12,8 +12,11 @@ router.register('reviews', ReviewViewSet, basename='review-api')
 app_name = 'cinema'
 
 urlpatterns = [
-    # HTML-интерфейс
-    path('', views.MovieListView.as_view(), name='movie-list'),
+    # ── ГЛАВНАЯ ──
+    path('', views.HomeView.as_view(), name='home'),
+
+    # ── каталог фильмов ──
+    path('movies/', views.MovieListView.as_view(), name='movie-list'),
     path('movies/<int:pk>/', views.MovieDetailView.as_view(),
          name='movie-detail'),
     path('movies/<int:pk>/favorite/', views.FavoriteToggleView.as_view(),
@@ -29,8 +32,8 @@ urlpatterns = [
     path('movies/<int:pk>/buy/', views.TicketPurchaseView.as_view(),
          name='ticket-buy'),
     path('tickets/', views.TicketListView.as_view(), name='ticket-list'),
-    path('tickets/<int:ticket_id>/pdf/',                     # PDF-квитанция
-         views.admin_ticket_pdf, name='admin_ticket_pdf'),
+    path('tickets/<int:ticket_id>/pdf/', views.admin_ticket_pdf,
+         name='admin_ticket_pdf'),
 
     # ── избранное / рекомендации ──
     path('favorites/',       views.FavoriteListView.as_view(),

@@ -12,7 +12,7 @@ class MovieFilter(df.FilterSet):
     # чувствительный поиск по описанию — __contains
     description_contains = df.CharFilter(
         field_name='description',
-        lookup_expr='contains', label='Описание содержит (CS)'
+        lookup_expr='icontains', label='Описание содержит'
     )
 
     # справочники

@@ -1,25 +1,58 @@
 from django.contrib.auth import login, logout, views as auth_views
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.staticfiles import finders
 from django.shortcuts import redirect, get_object_or_404
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.views import View
 from django.views.generic import (
     ListView, DetailView, CreateView, UpdateView, DeleteView,
-    FormView
+    FormView, TemplateView                  # ← TemplateView для Home
 )
 from django.http import HttpResponse
 from django.template.loader import render_to_string
-from django.contrib.staticfiles import finders  # ← NEW
+from django.db.models import Count
 import weasyprint
 
-from .models import Movie, Favorite, Review, Ticket, Seat, User
+from .models import (
+    Movie, Favorite, Review, Ticket, Seat,
+    User, Session                       # ← Session нужен для виджета
+)
 from .forms import (
     MovieForm, SignUpForm, SignInForm,
     ReviewForm, ProfileUpdateForm, TicketPurchaseForm
 )
 from .filters import MovieFilter
+
+
+# ─────────── ГЛАВНАЯ СТРАНИЦА ───────────
+class HomeView(TemplateView):
+    template_name = 'cinema/home.html'
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+
+        # 1. Новинки (по дате)
+        ctx['latest_movies'] = (
+            Movie.objects.order_by('-release_date')[:5]
+        )
+
+        # 2. Лучшие по рейтингу + количество отзывов (агрегация Count)
+        ctx['top_movies'] = (
+            Movie.objects.with_computed_rating()
+            .filter(computed_rating__isnull=False)
+            .annotate(review_count=Count('reviews', distinct=True))
+            .order_by('-computed_rating')[:5]
+        )
+
+        # 3. Ближайшие сеансы
+        ctx['next_sessions'] = (
+            Session.objects.select_related('movie', 'hall__cinema')
+            .filter(starts_at__gte=timezone.now())
+            .order_by('starts_at')[:5]
+        )
+        return ctx
 
 
 # ─────────── учётные записи ───────────
@@ -60,8 +93,9 @@ class RecommendationListView(LoginRequiredMixin, ListView):
     context_object_name = 'movies'
 
     def get_queryset(self):
-        user_reviewed = Review.objects.filter(user=self.request.user) \
-                                      .values_list('movie_id', flat=True)
+        user_reviewed = (Review.objects
+                         .filter(user=self.request.user)
+                         .values_list('movie_id', flat=True))
         return (Movie.objects.with_computed_rating()
                 .filter(computed_rating__gte=7)
                 .exclude(id__in=user_reviewed)
@@ -196,8 +230,8 @@ class ReviewModerationListView(StaffRequiredMixin, ListView):
     template_name = 'cinema/review_moderation.html'
     context_object_name = 'reviews'
     queryset = (Review.objects.filter(is_approved=False)
-                              .select_related('movie', 'user')
-                              .order_by('-created_at'))
+                .select_related('movie', 'user')
+                .order_by('-created_at'))
 
 
 class ReviewApproveView(StaffRequiredMixin, View):
@@ -260,9 +294,8 @@ def admin_ticket_pdf(request, ticket_id):
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'filename=ticket_{ticket.id}.pdf'
 
-    css_file = finders.find('css/pdf.css')     # ищем через staticfiles
+    css_file = finders.find('css/pdf.css')
     stylesheets = [weasyprint.CSS(css_file)] if css_file else []
 
-    weasyprint.HTML(string=html).write_pdf(response,
-                                           stylesheets=stylesheets)
+    weasyprint.HTML(string=html).write_pdf(response, stylesheets=stylesheets)
     return response
